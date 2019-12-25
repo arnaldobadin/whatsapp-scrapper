@@ -9,7 +9,8 @@ import (
 	"net/http"
 	"encoding/json"
 	"strings"
-	
+	"flag"
+
 	"encoding/base64"
 	"crypto/md5"
 	
@@ -20,8 +21,8 @@ import (
 const WPP_APK_PATH = "whatsapp.apk"
 const DEX_FILE = "classes.dex"
 
-var WPP_PAGE_URL = getEnv("APK_SCRAPPER_PAGE", "https://www.cdn.whatsapp.net/android/")
-var RESULT_JSON = getEnv("APK_SCRAPPER_OUTPUT", "./result.json")
+var DEFAULT_WPP_PAGE_URL = "https://www.cdn.whatsapp.net/android/"
+var DEFAULT_RESULT_JSON = "./result.json"
 
 type result struct {
 	Url string `json:"url"`
@@ -29,16 +30,15 @@ type result struct {
 	Hash string `json:"hash"`
 }
 
-func getEnv(key, defaultValue string) string {
-    value := os.Getenv(key)
-    if len(value) == 0 {
-        return defaultValue
-    }
-    return value
-}
-
 func main() {
-	doc, err := GetDocument(WPP_PAGE_URL)
+	var wppPageUrl string
+	flag.StringVar(&wppPageUrl, "url", DEFAULT_WPP_PAGE_URL, "Put whatsapp website that holds apk download here")
+
+	var resultFileName string
+	flag.StringVar(&resultFileName, "o", DEFAULT_RESULT_JSON, "Put the output file name (json) here")
+	flag.Parse()
+
+	doc, err := GetDocument(wppPageUrl)
 	if err != nil {
 		panic(err)
 	}
@@ -61,7 +61,7 @@ func main() {
 	info := result{url, version, hash}
 
 	file, _ := json.MarshalIndent(info, "", "\t")
-	_ = ioutil.WriteFile(RESULT_JSON, file, 0644)
+	_ = ioutil.WriteFile(resultFileName, file, 0644)
 
 	fmt.Println(info)
 }
