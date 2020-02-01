@@ -20,6 +20,8 @@ import (
 
 const WPP_APK_PATH = "whatsapp.apk"
 const DEX_FILE = "classes.dex"
+const APK_DELIMITER = "apk"
+const VERSION_DELIMITER = "Vers"
 
 var DEFAULT_WPP_PAGE_URL = "https://www.cdn.whatsapp.net/android/"
 var DEFAULT_RESULT_JSON = "./result.json"
@@ -75,28 +77,31 @@ func GetDocument(url string) (*goquery.Document, error) {
 }
 
 func GetApkDownloadUrl(doc *goquery.Document) (string, error) {
-	var apk_url string
+	var urls []string
 
-	doc.Find(".button").Each(func(index int, item *goquery.Selection) {
+	doc.Find("a, .button").Each(func(index int, item *goquery.Selection) {
 		href, ok := item.Attr("href")
 		if ok {
-			apk_url = href
+			urls = append(urls, href)
 		}
 	})
 
-	if apk_url == "" {
-		return "", errors.New("Can't find Apk Url")
+	for i := 0; i < len(urls); i++ {
+		url := urls[i]
+		if strings.Contains(url, APK_DELIMITER) {
+			return url, nil
+		}
 	}
 
-	return apk_url, nil
+	return "", errors.New("Can't find Apk Url")
 }
 
 func GetApkVersion(doc *goquery.Document) (string, error) {
 	var apk_version string
 
-	doc.Find(".hint").Each(func(index int, item *goquery.Selection) {
+	doc.Find("div").Each(func(index int, item *goquery.Selection) {
 		content := item.Contents().Text()
-		if content != "" {
+		if content != "" && strings.Contains(content, VERSION_DELIMITER) {
 			slice := strings.Split(content, " ")
 			apk_version = slice[len(slice) - 1]
 		}
